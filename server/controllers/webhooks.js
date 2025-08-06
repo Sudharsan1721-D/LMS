@@ -1,5 +1,6 @@
 import { Webhook } from "svix";
 import User from "../models/user.js";
+import e from "express";
 
 export const clerkWebhooks = async (req, res) => {
     try {
@@ -42,3 +43,5 @@ export const clerkWebhooks = async (req, res) => {
         return res.status(400).json({ success: false, message: error.message });
     }
 };
+
+export default clerkWebhooks;
