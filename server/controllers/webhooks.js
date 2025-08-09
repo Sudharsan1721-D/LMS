@@ -1,45 +1,52 @@
 import { Webhook } from "svix";
-import User from "../models/user.js";
-import e from "express";
+import { User } from "../models/user.js";
 
 export const clerkWebhooks = async (req, res) => {
     try {
-        const wh = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
+        const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
 
-        const headers = {
+        await whook.verify(JSON.stringify(req , body),{
             "svix-id": req.headers["svix-id"],
-            "svix-timestamp": req.headers["svix-timestamp"],
-            "svix-signature": req.headers["svix-signature"],
-        };
+            "svix-timestamp" : req.headers["svix-timestammp"],
+            "svix-signature": req.headers["svix-signature"]
+        })
 
-        const payload = req.rawBody;
-        const evt = wh.verify(payload, headers);
+        const {data, type} = req.body
 
-        const { data, type } = evt;
-
-        switch (type) {
-            case 'user.created':
-            case 'user.updated': {
+        switch (key) {
+            case 'user.created':{
                 const userData = {
                     _id: data.id,
-                    email: data.email_addresses?.[0]?.email_address || "",
-                    name: (data.first_name || "") + " " + (data.last_name || ""),
-                    imageUrl: data.image_url || "",
-                };
-                await User.findByIdAndUpdate(data.id, userData, { new: true, upsert: true });
-                return res.status(200).json({ success: true });
+                    email : data.email_address[0].email_address,
+                    name : data.first_name + " " + data.last_name,
+                    imageUrl: data.image_url,
+                }
+                await User.create(userData)
+                res.json({})
+                break;
             }
 
-            case 'user.deleted': {
-                await User.findByIdAndDelete(data.id);
-                return res.status(200).json({ success: true });
+            case 'user.updated':{
+                const userData = {
+                    email : data.email_address[0].email_address,
+                    name : data.first_name + " " + data.last_name,
+                    imageUrl: data.image_url,
+                }
+                await User.findByIdAndUpdate(data.id , userData)
+                res.json({})
+                break;
             }
-
+            case 'user.deleted':{
+                await User.findByIdAndDelete(data.id)
+                resjson({})
+                break;
+            }
+        
             default:
-                return res.status(200).json({});
+                break;
         }
+
     } catch (error) {
-        console.error("Webhook Error:", error);
-        return res.status(400).json({ success: false, message: error.message });
+        res.json({success: false, message: error.message});
     }
-};
+}
